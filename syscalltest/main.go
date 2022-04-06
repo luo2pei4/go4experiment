@@ -26,7 +26,6 @@ func main() {
 				fmt.Println(err.Error())
 				wg.Done()
 			} else {
-				fmt.Println("has msg")
 				fmt.Println(msg)
 			}
 		}
