@@ -50,7 +50,7 @@ type DevInfo struct {
 
 type UsbMap map[string]*DevInfo
 
-func (usbMap UsbMap) CheckUSBStorage(itemsMap map[string]string) {
+func CheckUSBStorage(itemsMap map[string]string, usbMap map[string]*DevInfo) {
 
 	action := itemsMap["ACTION"]
 	devName := itemsMap["DEVNAME"]
@@ -95,8 +95,8 @@ func (usbMap UsbMap) CheckUSBStorage(itemsMap map[string]string) {
 	} else if action == "remove" {
 		if subSystem == "usb" {
 			if dp, ok := containsDevPath(devPath); ok {
-				delete(usbMap, dp)
 				fmt.Printf("usb device %s pulled out.\n", dp)
+				delete(usbMap, dp)
 			}
 		}
 	}

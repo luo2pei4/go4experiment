@@ -36,8 +36,7 @@ func main() {
 					itemsMap[kv[0]] = kv[1]
 				}
 			}
-			usbMap.CheckUSBStorage(itemsMap)
+			test.CheckUSBStorage(itemsMap, usbMap)
 		}
-
 	}
 }
