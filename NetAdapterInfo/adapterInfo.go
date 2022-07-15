@@ -38,12 +38,12 @@ func GetAdaptersInfo() ([]AdapterInfo, error) {
 		if err != nil {
 			return nil, err
 		}
-		for idx, addr := range addrs {
-			ip, _, err := net.ParseCIDR(addr.String())
+		for _, addr := range addrs {
+			ip, ipNet, err := net.ParseCIDR(addr.String())
 			if err != nil {
 				return nil, err
 			}
-			if idx%2 == 0 {
+			if len(ipNet.IP) == net.IPv4len {
 				adapter.Ipv4 = ip.String()
 			} else {
 				adapter.Ipv6 = ip.String()
