@@ -1,19 +1,20 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"net"
 	"strings"
 )
 
 type AdapterInfo struct {
-	Index      int
-	MTU        int
-	Name       string
-	Ipv4       string
-	Ipv6       string
-	MacAddress string
-	Flags      []string
+	Index int      `json:"index"`
+	Speed int      `json:"speed"`
+	Name  string   `json:"name"`
+	Ipv4  string   `json:"ipv4"`
+	Ipv6  string   `json:"ipv6"`
+	Mac   string   `json:"mac"`
+	Flags []string `json:"flags"`
 }
 
 func GetAdaptersInfo() ([]AdapterInfo, error) {
@@ -26,12 +27,13 @@ func GetAdaptersInfo() ([]AdapterInfo, error) {
 
 	for _, ifi := range ifis {
 		adapter := AdapterInfo{
-			Index:      ifi.Index,
-			MTU:        ifi.MTU,
-			Name:       ifi.Name,
-			MacAddress: ifi.HardwareAddr.String(),
-			Flags:      strings.Split(ifi.Flags.String(), "|"),
+			Index: ifi.Index,
+			Speed: ifi.MTU,
+			Name:  ifi.Name,
+			Mac:   ifi.HardwareAddr.String(),
 		}
+		flags := strings.ToUpper(ifi.Flags.String())
+		adapter.Flags = strings.Split(flags, "|")
 		addrs, err := ifi.Addrs()
 		if err != nil {
 			return nil, err
@@ -60,7 +62,10 @@ func main() {
 	}
 
 	for _, adapter := range adapters {
-		fmt.Printf("[%d](%d)%s\t%v\t%s\n", adapter.Index, adapter.MTU, adapter.Name, adapter.Flags, adapter.MacAddress)
-		fmt.Printf("[IPv4/IPv6]%s/%s\n", adapter.Ipv4, adapter.Ipv6)
+		arr, err := json.Marshal(adapter)
+		if err != nil {
+			fmt.Println(err.Error())
+		}
+		fmt.Printf("%s\n", string(arr))
 	}
 }
