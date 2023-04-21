@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"os/exec"
 	"strings"
 	"syscall"
@@ -11,10 +12,9 @@ import (
 )
 
 type Result struct {
-	ReturnCode  int
-	StdOutBuf   []byte
-	ErrOutBuf   []byte
-	CommandLine string
+	Code   int
+	StdOut []byte
+	ErrOut []byte
 }
 
 func ExecuteCmd(dur time.Duration, args ...string) (result *Result, err error) {
@@ -26,7 +26,7 @@ func ExecuteCmd(dur time.Duration, args ...string) (result *Result, err error) {
 	}
 
 	result = new(Result)
-	cmd := exec.Command(strings.Join(args, " "))
+	cmd := exec.Command("/bin/bash", "-c", strings.Join(args, " "))
 
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
@@ -46,20 +46,38 @@ func ExecuteCmd(dur time.Duration, args ...string) (result *Result, err error) {
 	select {
 	case <-notify:
 	case <-ctx.Done():
-		err = syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
+		if err = syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL); err == nil {
+			err = errors.New("execution timeout")
+		}
 	}
 
 	if err != nil {
 		return nil, err
 	}
 
-	result.ReturnCode = cmd.ProcessState.ExitCode()
+	result.Code = cmd.ProcessState.ExitCode()
 	if stdout.Len() > 0 {
-		result.StdOutBuf = stdout.Bytes()
+		result.StdOut = stdout.Bytes()
 	}
 	if stderr.Len() > 0 {
-		result.ErrOutBuf = stderr.Bytes()
+		result.ErrOut = stderr.Bytes()
 	}
 
 	return
+}
+
+func main() {
+	result, err := ExecuteCmd(5*time.Second, "sleep", "10s")
+	if err != nil {
+		fmt.Println("execute error,", err.Error())
+		return
+	}
+
+	if result.Code != 0 {
+		fmt.Println("return code:", result.Code)
+		fmt.Println(string(result.ErrOut))
+		return
+	}
+
+	fmt.Println(string(result.StdOut))
 }
