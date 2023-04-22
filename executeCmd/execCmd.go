@@ -18,23 +18,23 @@ type Result struct {
 }
 
 func ExecuteCmd(dur time.Duration, args ...string) (result *Result, err error) {
+
 	ctx, cancel := context.WithTimeout(context.Background(), dur)
 	defer cancel()
 
 	if len(args) == 0 {
-		return nil, errors.New("invalid parameters, command is empty")
+		err = errors.New("invalid parameters, command is empty")
+		return
 	}
 
-	result = new(Result)
-	cmd := exec.Command("/bin/bash", "-c", strings.Join(args, " "))
-
 	var stdout, stderr bytes.Buffer
+	cmd := exec.Command("/bin/bash", "-c", strings.Join(args, " "))
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 
 	if err = cmd.Start(); err != nil {
-		return nil, err
+		return
 	}
 
 	notify := make(chan struct{})
@@ -49,12 +49,11 @@ func ExecuteCmd(dur time.Duration, args ...string) (result *Result, err error) {
 		if err = syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL); err == nil {
 			err = errors.New("execution timeout")
 		}
+		// return directly when execution timeout
+		return
 	}
 
-	if err != nil {
-		return nil, err
-	}
-
+	result = new(Result)
 	result.Code = cmd.ProcessState.ExitCode()
 	if stdout.Len() > 0 {
 		result.StdOut = stdout.Bytes()
@@ -67,17 +66,18 @@ func ExecuteCmd(dur time.Duration, args ...string) (result *Result, err error) {
 }
 
 func main() {
-	result, err := ExecuteCmd(5*time.Second, "sleep", "10s")
+	result, err := ExecuteCmd(5*time.Second, "sleep", "8s")
 	if err != nil {
 		fmt.Println("execute error,", err.Error())
-		return
 	}
 
-	if result.Code != 0 {
-		fmt.Println("return code:", result.Code)
-		fmt.Println(string(result.ErrOut))
-		return
+	if result != nil {
+		fmt.Println("exit code:", result.Code)
+		if len(result.ErrOut) > 0 {
+			fmt.Println("cmd errout:", string(result.ErrOut))
+		}
+		if len(result.StdOut) > 0 {
+			fmt.Println("cmd stdout", string(result.StdOut))
+		}
 	}
-
-	fmt.Println(string(result.StdOut))
 }
