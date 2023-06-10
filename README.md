@@ -9,3 +9,5 @@ NetAdapterInfo 用go原生sdk获取网口的信息，包括编号、最大速率
 serviceSubscrib go-systemdライブラリを使って、Linux各サービスの状態変更メッセージを取得する
 
 chmodTest os.Chmod関数の練習
+
+udevtest 用过netlink实现对设备监听。syscalltest的另一个版本
